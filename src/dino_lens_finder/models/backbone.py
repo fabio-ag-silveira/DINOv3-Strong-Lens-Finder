@@ -59,8 +59,9 @@ def apply_lora(backbone: Backbone, cfg: FinetuneCfg) -> Backbone:
 
     targets = cfg.target_modules
     if targets is None:
-        targets = (["query", "key", "value", "dense"]
-                   if backbone.source == "hf" else ["qkv", "proj"])
+        # "all-linear" is robust across DINOv3/DINOv2 attention naming
+        # (q/k/v/o projections + MLP); timm ViT exposes fused qkv + proj.
+        targets = "all-linear" if backbone.source == "hf" else ["qkv", "proj"]
     lconf = LoraConfig(r=cfg.lora_r, lora_alpha=cfg.lora_alpha,
                        lora_dropout=cfg.lora_dropout, target_modules=targets,
                        bias="none")

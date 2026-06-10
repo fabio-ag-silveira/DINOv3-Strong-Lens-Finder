@@ -21,7 +21,7 @@ finetune:
   lora_r: 16
   lora_alpha: 32
   lora_dropout: 0.05
-  target_modules: null  # null -> sensible per-source defaults
+  target_modules: null  # null -> 'all-linear' (hf) / [qkv, proj] (timm)
 
 head:
   hidden_dim: 512
