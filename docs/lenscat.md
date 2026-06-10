@@ -54,3 +54,12 @@ surveys/resolutions (heterogeneous positives), and the negatives are random fiel
 rather than vetted non-lenses. Treat the number as indicative, and state these
 caveats when you report it. For the cleanest comparison, fine-tune/evaluate within a
 single `--layer` and `--grading confident`.
+
+Three concrete sources of label/benchmark noise to keep in mind:
+- `probable`-graded entries are **candidates**, not all confirmed — use
+  `--grading confident` for cleaner positives.
+- Many confirmed lenses show **no visible arc** at Legacy Survey depth/seeing, so a
+  correct positive label can carry little visual signal.
+- Negatives are **random fields**, not matched non-lens galaxies, so a model can
+  partly exploit *“is there a central galaxy?”*. Matched negatives (random bright
+  galaxies) would make this a stricter test — a worthwhile future improvement.

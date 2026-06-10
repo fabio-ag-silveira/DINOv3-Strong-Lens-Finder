@@ -15,7 +15,8 @@ cli.py                      thin argument parsing -> calls into the layers below
 │
 ├─ data/                    turn images into tensors / benchmark ingestion
 │   ├─ dataset.py           LensDataset, augmentation, imbalance sampler
-│   └─ bologna.py           Bologna Challenge FITS -> PNG + index.csv  [sim extra]
+│   ├─ bologna.py           Bologna Challenge FITS -> PNG + index.csv   [sim extra]
+│   └─ lenscat.py           real lenses + Legacy Survey cutouts         [benchmark]
 │
 ├─ models/                  the network
 │   ├─ backbone.py          DINOv3/DINOv2 (HF) or timm + LoRA, uniform interface
@@ -26,7 +27,8 @@ cli.py                      thin argument parsing -> calls into the layers below
 │   ├─ metrics.py           ROC-AUC, TPR@FPR, precision@N (ranking metrics)
 │   └─ trainer.py           Trainer: AMP + grad-accum + best-checkpointing
 │
-└─ evaluation.py            score a checkpoint -> metrics + ranked candidate CSV
+├─ evaluation.py            score a checkpoint -> metrics + ranked candidate CSV
+└─ report.py                ROC + ranked-grid figures (matplotlib)        [notebook]
 ```
 
 ## Data contract

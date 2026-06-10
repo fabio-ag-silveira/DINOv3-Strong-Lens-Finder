@@ -67,7 +67,10 @@ def _build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--seed", type=int, default=42)
 
     with_config(sub.add_parser("check-backbone", help="verify DINOv3 access"))
-    with_config(sub.add_parser("train", help="fine-tune the model"))
+    sp = sub.add_parser("train", help="fine-tune the model")
+    with_config(sp)
+    sp.add_argument("--index", default=None, help="override data.index")
+    sp.add_argument("--out-dir", default=None, help="override train.out_dir")
 
     sp = sub.add_parser("eval", help="evaluate a checkpoint")
     with_config(sp)
@@ -111,7 +114,12 @@ def main(argv: Optional[Sequence[str]] = None) -> None:
     elif args.cmd == "train":
         from .config import Config
         from .training.trainer import Trainer
-        Trainer(Config.from_yaml(args.config)).fit()
+        cfg = Config.from_yaml(args.config)
+        if args.index:
+            cfg.data.index = args.index
+        if args.out_dir:
+            cfg.train.out_dir = args.out_dir
+        Trainer(cfg).fit()
     elif args.cmd == "eval":
         from .config import Config
         from .evaluation import evaluate_checkpoint

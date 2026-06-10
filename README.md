@@ -8,8 +8,8 @@ imagery by fine-tuning a **DINOv3** self-supervised vision backbone. Lenses are
 the Hubble constant — a textbook **needle-in-a-haystack ranking** problem and a
 clean showcase for modern transfer learning.
 
-The project's story: **train on physical simulations, evaluate on a public
-benchmark** (Bologna Lens Finding Challenge).
+The project's story: **train on physical simulations, then measure and analyse the
+sim→real gap on real lenses** (see Results).
 
 ![Simulated examples — green = lens, red = non-lens](assets/lens_examples.png)
 
@@ -39,9 +39,10 @@ dino-lens check-backbone
 dino-lens train  --config configs/default.yaml
 dino-lens eval   --ckpt runs/exp1/best.pt --split val
 
-# 4) evaluate on the benchmark (download the Bologna challenge first)
-dino-lens make-bologna --image-dir /path/to/bologna/fits --catalog /path/to/catalog.csv
-#   then set data.index -> data/bologna/index.csv and re-run `dino-lens eval`
+# 4) real benchmark (server-free): build real cutouts, then evaluate
+dino-lens make-lenscat --n-per-class 300 --val-frac 1.0 --out data/lenscat
+dino-lens eval --ckpt runs/exp1/best.pt --index data/lenscat/index.csv --split val
+#   (the canonical Bologna benchmark is also supported: see docs/bologna.md)
 
 # 5) interactive demo
 LENS_CKPT=runs/exp1/best.pt python app/gradio_app.py
@@ -57,10 +58,9 @@ held-out simulated set (single RTX 5060, ~3 min): **ROC-AUC 0.999**, **TPR@FPR=0
 
 ![Top-ranked candidates](assets/example_ranked_grid.png)
 
-> Simulated data is deliberately separable, so this validates the *pipeline* rather
-> than the science. The meaningful test is **sim→real**: evaluate on the Bologna
-> Lens Finding Challenge (`dino-lens make-bologna`). Reproduce everything on CPU —
-> no GPU/DINOv3 — with [`notebooks/results.ipynb`](notebooks/results.ipynb).
+> Simulated data is deliberately separable, so this validates the *pipeline*; the
+> scientifically meaningful number is the **sim→real gap** below. Reproduce the
+> figures on CPU (no GPU/DINOv3) with [`notebooks/results.ipynb`](notebooks/results.ipynb).
 
 ## Sim→real gap (lenscat)
 
@@ -88,8 +88,8 @@ satellite-pretrained DINOv3 — is the natural next step.
 ## Docs
 - [docs/usage.md](docs/usage.md) — full usage, config reference, DINOv3 access, 8 GB tips.
 - [docs/architecture.md](docs/architecture.md) — module map and design decisions.
-- [docs/bologna.md](docs/bologna.md) — download & convert the Bologna benchmark (sim→real).
-- [docs/lenscat.md](docs/lenscat.md) — server-free real benchmark via lenscat + Legacy Survey.
+- [docs/lenscat.md](docs/lenscat.md) — **server-free real benchmark** (lenscat + Legacy Survey).
+- [docs/bologna.md](docs/bologna.md) — canonical Bologna benchmark (access-restricted server).
 
 ## Layout
 ```
