@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import os
+from typing import Optional
 
 import torch
 from torch.utils.data import DataLoader
@@ -16,8 +17,11 @@ from .utils import get_device, get_logger
 
 
 def evaluate_checkpoint(cfg: Config, ckpt: str, split: str = "val",
-                        out: str = "runs/exp1/ranked_candidates.csv") -> dict:
+                        out: str = "runs/exp1/ranked_candidates.csv",
+                        index: Optional[str] = None) -> dict:
     log = get_logger()
+    if index:
+        cfg.data.index = index
     device = get_device()
     model = build_model(cfg).to(device)
     model.load_state_dict(torch.load(ckpt, map_location=device)["model"])

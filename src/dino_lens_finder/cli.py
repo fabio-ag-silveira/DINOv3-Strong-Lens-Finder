@@ -74,6 +74,8 @@ def _build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--ckpt", default="runs/exp1/best.pt")
     sp.add_argument("--split", default="val")
     sp.add_argument("--out", default="runs/exp1/ranked_candidates.csv")
+    sp.add_argument("--index", default=None,
+                    help="override data.index, e.g. data/lenscat/index.csv")
     return p
 
 
@@ -113,7 +115,8 @@ def main(argv: Optional[Sequence[str]] = None) -> None:
     elif args.cmd == "eval":
         from .config import Config
         from .evaluation import evaluate_checkpoint
-        evaluate_checkpoint(Config.from_yaml(args.config), args.ckpt, args.split, args.out)
+        evaluate_checkpoint(Config.from_yaml(args.config), args.ckpt, args.split,
+                            args.out, index=args.index)
 
 
 if __name__ == "__main__":

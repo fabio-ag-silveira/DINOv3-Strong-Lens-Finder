@@ -62,6 +62,29 @@ held-out simulated set (single RTX 5060, ~3 min): **ROC-AUC 0.999**, **TPR@FPR=0
 > Lens Finding Challenge (`dino-lens make-bologna`). Reproduce everything on CPU —
 > no GPU/DINOv3 — with [`notebooks/results.ipynb`](notebooks/results.ipynb).
 
+## Sim→real gap (lenscat)
+
+Evaluating the **same** simulation-trained model on **real** lenses (lenscat
+catalogue + Legacy Survey cutouts, [server-free](docs/lenscat.md)) drops it to
+near-random — the expected, well-known sim→real domain gap:
+
+| Test set | ROC-AUC | TPR@FPR=0.1 |
+|----------|:-------:|:-----------:|
+| Simulated (lenstronomy) | **0.999** | 1.00 |
+| Real (lenscat, ground-based) | **0.54** | 0.20 |
+
+![sim->real ROC](assets/sim2real_roc.png)
+
+The top-ranked real candidates reveal the cause: the model latched onto a
+*simulator-specific colour cue* (bluish arcs) and fires on blue stars/artifacts
+(red borders), while many spectroscopically-confirmed lenses show no visible arc at
+ground-based depth (a genuinely hard, noisy benchmark).
+
+![sim->real top candidates](assets/sim2real_top16.png)
+
+Closing this gap — domain-matched simulation, fine-tuning on real labels, or the
+satellite-pretrained DINOv3 — is the natural next step.
+
 ## Docs
 - [docs/usage.md](docs/usage.md) — full usage, config reference, DINOv3 access, 8 GB tips.
 - [docs/architecture.md](docs/architecture.md) — module map and design decisions.
