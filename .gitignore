@@ -1,11 +1,19 @@
+# Byte-compiled / packaging
 __pycache__/
 *.pyc
-runs/
-data/
-*.pt
-*.ckpt
 *.egg-info/
 .venv/
 .DS_Store
+
+# Test caches
 .pytest_cache/
 pytest-cache-files-*/
+
+# Generated datasets, training runs, checkpoints
+# (anchored so they do NOT match the source package src/dino_lens_finder/data/)
+/data/
+/runs/
+notebooks/data/
+notebooks/runs/
+*.pt
+*.ckpt
