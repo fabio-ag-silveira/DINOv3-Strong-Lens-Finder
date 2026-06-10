@@ -1,5 +1,7 @@
 # DINOv3 Strong-Lens Finder
 
+[![CI](https://github.com/fabio-ag-silveira/DINOv3-Strong-Lens-Finder/actions/workflows/ci.yml/badge.svg)](https://github.com/fabio-ag-silveira/DINOv3-Strong-Lens-Finder/actions/workflows/ci.yml)
+
 Find **strong gravitational lenses** (arcs, Einstein rings) in wide-field survey
 imagery by fine-tuning a **DINOv3** self-supervised vision backbone. Lenses are
 ~1 in tens of thousands of galaxies yet invaluable for measuring dark matter and
