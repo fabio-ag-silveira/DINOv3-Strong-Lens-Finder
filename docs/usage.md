@@ -98,5 +98,8 @@ pytest -q          # metric + toy tests always run; the end-to-end CPU test
 pip install -e ".[notebook]"
 jupyter lab notebooks/results.ipynb   # runs on CPU with a timm fallback backbone
 ```
-It builds a small simulated set, trains a quick baseline, and plots the ROC curve
-and the top-ranked candidates — a self-contained first run and a portfolio figure.
+It **auto-detects** a trained checkpoint at `runs/exp1/best.pt`: if present it
+evaluates your real DINOv3 model and regenerates the README figures
+(`assets/example_roc.png`, `assets/example_ranked_grid.png`); otherwise it trains a
+quick CPU baseline (timm, no DINOv3/GPU). Either way it plots the ROC curve and the
+top-ranked candidates.

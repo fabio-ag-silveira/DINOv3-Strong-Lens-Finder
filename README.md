@@ -50,15 +50,17 @@ No GPU yet? `pytest -q` runs a CPU end-to-end check with a tiny timm backbone.
 
 ## Results
 
-Run [`notebooks/results.ipynb`](notebooks/results.ipynb) end-to-end **on CPU**
-(timm fallback backbone — no DINOv3 download, no GPU) to reproduce a ROC curve and
-a ranked-candidate grid. Example output:
+**DINOv3 ViT-B + LoRA**, fine-tuned on lenstronomy simulations and evaluated on a
+held-out simulated set (single RTX 5060, ~3 min): **ROC-AUC 0.999**, **TPR@FPR=0.1 = 1.0**, and the **top-16 ranked candidates are all true lenses** (green border):
 
 ![ROC curve](assets/example_roc.png)
 
 ![Top-ranked candidates](assets/example_ranked_grid.png)
 
-Swap in DINOv3 + a GPU (see the notebook's last section) for publication-grade numbers.
+> Simulated data is deliberately separable, so this validates the *pipeline* rather
+> than the science. The meaningful test is **sim→real**: evaluate on the Bologna
+> Lens Finding Challenge (`dino-lens make-bologna`). Reproduce everything on CPU —
+> no GPU/DINOv3 — with [`notebooks/results.ipynb`](notebooks/results.ipynb).
 
 ## Docs
 - [docs/usage.md](docs/usage.md) — full usage, config reference, DINOv3 access, 8 GB tips.
