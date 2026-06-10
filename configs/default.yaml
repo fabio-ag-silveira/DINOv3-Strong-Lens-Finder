@@ -1,0 +1,54 @@
+# ============================================================
+#  DINOv3 Strong-Lens Finder - default configuration
+#  Tuned to fit an 8 GB GPU (e.g. RTX 5060 laptop).
+#  Maps 1:1 onto the dataclasses in dino_lens_finder/config.py.
+# ============================================================
+
+backbone:
+  source: hf            # "hf" (DINOv3/DINOv2 via transformers) | "timm"
+  # Accept the licence on the model page first:
+  #   https://huggingface.co/collections/facebook/dinov3-68924841bd6b561778e31009
+  name: facebook/dinov3-vitb16-pretrain-lvd1689m
+  # Satellite-pretrained variant (smaller domain gap; ships only as ViT-L / ViT-7B):
+  #   name: facebook/dinov3-vitl16-pretrain-sat493m
+  img_size: 224
+  patch_size: 16
+  prefix_tokens: 5      # CLS(1) + register tokens(4) for DINOv3. Use 1 for DINOv2.
+  pretrained: true
+
+finetune:
+  mode: lora            # "frozen" | "lora" | "full"
+  lora_r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  target_modules: null  # null -> sensible per-source defaults
+
+head:
+  hidden_dim: 512
+  dropout: 0.2
+  seg_head: false       # localize arcs from dense features (hf source only)
+
+data:
+  index: data/lenstronomy/index.csv   # columns: path,label,split
+  img_size: 224
+  num_workers: 4
+  mean: [0.485, 0.456, 0.406]
+  std:  [0.229, 0.224, 0.225]
+
+train:
+  epochs: 20
+  batch_size: 16        # ViT-S frozen. Drop to 8 for ViT-B + LoRA on 8 GB.
+  grad_accum: 2
+  lr: 3.0e-4
+  weight_decay: 0.05
+  amp: true
+  precision: bf16       # "bf16" (Ada/Blackwell) | "fp16"
+  focal_gamma: 2.0
+  focal_alpha: 0.25
+  balance_sampler: true
+  seed: 42
+  out_dir: runs/exp1
+
+eval:
+  fpr_target: 0.1
+  top_n: 100
