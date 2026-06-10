@@ -61,7 +61,7 @@ class Trainer:
 
         use_amp = t.amp and self.device.type == "cuda"
         amp_dtype = torch.bfloat16 if t.precision == "bf16" else torch.float16
-        scaler = torch.cuda.amp.GradScaler(enabled=use_amp and amp_dtype == torch.float16)
+        scaler = torch.amp.GradScaler("cuda", enabled=use_amp and amp_dtype == torch.float16)
         accum = max(1, t.grad_accum)
         os.makedirs(t.out_dir, exist_ok=True)
 
@@ -82,7 +82,7 @@ class Trainer:
                     else:
                         opt.step()
                     opt.zero_grad()
-                pbar.set_postfix(loss=float(loss) * accum)
+                pbar.set_postfix(loss=loss.detach().item() * accum)
 
             m = compute_metrics(*self.evaluate(va_loader),
                                 fpr_target=self.cfg.eval.fpr_target,
