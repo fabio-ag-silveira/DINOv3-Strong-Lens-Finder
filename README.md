@@ -65,6 +65,8 @@ held-out simulated set (single RTX 5060, ~3 min): **ROC-AUC 0.999**, **TPR@FPR=0
 ## Docs
 - [docs/usage.md](docs/usage.md) — full usage, config reference, DINOv3 access, 8 GB tips.
 - [docs/architecture.md](docs/architecture.md) — module map and design decisions.
+- [docs/bologna.md](docs/bologna.md) — download & convert the Bologna benchmark (sim→real).
+- [docs/lenscat.md](docs/lenscat.md) — server-free real benchmark via lenscat + Legacy Survey.
 
 ## Layout
 ```

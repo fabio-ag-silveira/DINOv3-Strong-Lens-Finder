@@ -46,8 +46,25 @@ def _build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--id-col", default="ID")
     sp.add_argument("--label-col", default="is_lens")
     sp.add_argument("--pattern", default="*{id}*.fits")
+    sp.add_argument("--bands", nargs="+", default=None,
+                    help="per-band patterns (multi-file ground-based), each with {id}")
+    sp.add_argument("--label-threshold", type=float, default=None,
+                    help="derive label as (label_col value > threshold)")
     sp.add_argument("--val-frac", type=float, default=0.2)
     sp.add_argument("--size", type=int, default=None)
+
+    sp = sub.add_parser("make-lenscat",
+                        help="REAL lens/non-lens benchmark via lenscat + Legacy Survey")
+    sp.add_argument("--out", default="data/lenscat")
+    sp.add_argument("--n-per-class", type=int, default=300)
+    sp.add_argument("--layer", default="ls-dr10")
+    sp.add_argument("--pixscale", type=float, default=0.262)
+    sp.add_argument("--size", type=int, default=101)
+    sp.add_argument("--grading", nargs="+", default=["confident", "probable"])
+    sp.add_argument("--lens-type", default="galaxy")
+    sp.add_argument("--val-frac", type=float, default=0.2)
+    sp.add_argument("--catalog-path", default=None)
+    sp.add_argument("--seed", type=int, default=42)
 
     with_config(sub.add_parser("check-backbone", help="verify DINOv3 access"))
     with_config(sub.add_parser("train", help="fine-tune the model"))
@@ -75,7 +92,16 @@ def main(argv: Optional[Sequence[str]] = None) -> None:
         from .data.bologna import build_bologna_index
         build_bologna_index(args.image_dir, args.catalog, args.out,
                             id_col=args.id_col, label_col=args.label_col,
-                            pattern=args.pattern, val_frac=args.val_frac, size=args.size)
+                            pattern=args.pattern, band_patterns=args.bands,
+                            label_threshold=args.label_threshold,
+                            val_frac=args.val_frac, size=args.size)
+    elif args.cmd == "make-lenscat":
+        from .data.lenscat import build_lenscat_dataset
+        build_lenscat_dataset(args.out, n_per_class=args.n_per_class, layer=args.layer,
+                              pixscale=args.pixscale, size=args.size,
+                              grading=tuple(args.grading), lens_type=args.lens_type,
+                              val_frac=args.val_frac, catalog_path=args.catalog_path,
+                              seed=args.seed)
     elif args.cmd == "check-backbone":
         from .config import Config
         from .models.backbone import check_backbone

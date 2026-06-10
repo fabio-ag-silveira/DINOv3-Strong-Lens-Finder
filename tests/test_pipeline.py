@@ -56,3 +56,27 @@ def test_end_to_end_cpu(tmp_path):
         loss = crit(model(x), y.float())
         opt.zero_grad(); loss.backward(); opt.step()
     assert torch.isfinite(loss)
+
+
+def test_lenscat_build_offline(monkeypatch, tmp_path):
+    """Validate the lenscat orchestration with the network mocked out."""
+    import csv
+    import numpy as np
+    from dino_lens_finder.data import lenscat
+
+    catalog = [{"name": f"L{i}", "ra_deg": 10.0 + i, "dec_deg": 1.0 + i,
+                "lens_type": "galaxy", "grading": "confident"} for i in range(6)]
+    catalog.append({"name": "Cl", "ra_deg": 5, "dec_deg": 5,
+                    "lens_type": "cluster", "grading": "confident"})  # filtered out
+    monkeypatch.setattr(lenscat, "_load_catalog", lambda path=None: catalog)
+
+    rng = np.random.default_rng(0)
+    monkeypatch.setattr(
+        lenscat, "_fetch_cutout",
+        lambda ra, dec, layer, pixscale, size, timeout=30:
+            rng.integers(0, 255, (size, size, 3), dtype=np.uint8))
+
+    idx = lenscat.build_lenscat_dataset(str(tmp_path / "lc"), n_per_class=3,
+                                        size=32, sleep=0.0, seed=1)
+    labels = [int(r["label"]) for r in csv.DictReader(open(idx))]
+    assert labels.count(1) == 3 and labels.count(0) == 3

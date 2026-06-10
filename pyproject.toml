@@ -26,6 +26,7 @@ dependencies = [
 sim  = ["lenstronomy>=1.11", "astropy>=5.0"]   # physical simulation + Bologna FITS
 demo = ["gradio>=4.0"]
 notebook = ["matplotlib>=3.6", "jupyter", "nbformat"]
+benchmark = ["pandas", "pyarrow", "requests"]   # lenscat catalogue + cutout fetch
 dev  = ["pyflakes", "pytest"]
 
 [project.scripts]

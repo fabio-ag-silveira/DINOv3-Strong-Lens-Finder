@@ -60,6 +60,8 @@ This writes `data/bologna/index.csv` in the same format. Point `data.index` at i
 re-run `dino-lens eval` to get a number comparable with the literature — i.e. *train
 on simulation, evaluate on the real benchmark*.
 
+Full walkthrough (both tracks, label thresholds, multi-band): **see [bologna.md](bologna.md)**.
+
 Input assumptions (all overridable): one FITS per object (single band or several 2-D
 image HDUs = bands), and a catalogue CSV with an ID column and a 0/1 label column.
 Bands → RGB: first three HDUs map to R,G,B (a single band is replicated), with an

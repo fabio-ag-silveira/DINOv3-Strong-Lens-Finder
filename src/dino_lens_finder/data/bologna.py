@@ -1,40 +1,53 @@
 """Loader/converter for the Bologna Strong Gravitational Lens Finding Challenge
-(Metcalf et al. 2019) - the standard public benchmark for lens finding.
+(Metcalf et al. 2019, A&A 625, A119) - the standard public lens-finding benchmark.
 
-The challenge ships FITS cutouts plus a catalogue of labels. Because the data is
-gated (free registration), this module does NOT download it: point it at your local
-copy and it converts the FITS into the same PNG + index.csv layout the rest of the
-pipeline consumes. That is what lets you "train on simulation, evaluate on the
-benchmark" without touching the training code.
+The challenge has two tracks, both with 101x101 px cutouts and a truth "key":
+  * space-based  : 1 band (Euclid VIS-like, ~0.1"/px)  -> one FITS per object
+  * ground-based : 4 bands (KiDS-like u/g/r/i, ~0.2"/px) -> one FITS per band
 
-Expected input (override via arguments):
-  image_dir/   FITS files, one per object, e.g. imageEUC_VIS-<ID>.fits
-               (single band, or several 2-D image HDUs = bands)
-  catalog.csv  a row per object with an ID column and a binary label column
+This module converts a local copy into the same PNG + index.csv layout the rest of
+the pipeline consumes, so "train on simulation, evaluate on the benchmark" needs no
+code changes - just repoint data.index. The data is gated (free registration), so
+nothing is downloaded here. See docs/bologna.md.
 
-Band -> RGB: if a FITS exposes >=3 two-dimensional image HDUs, the first three map
-to R,G,B; a single band is replicated to three channels. An asinh stretch with
-percentile clipping mimics how lenses are inspected visually.
+Label: pass a binary column directly (label_col), or derive it from a numeric
+quality column with `label_threshold` (e.g. number of lensed-source pixels), which
+reproduces the challenge's "detectable lens" definition.
 """
 from __future__ import annotations
 
 import csv
 import glob
 import os
-from typing import List, Optional
+from typing import List, Optional, Sequence, Union
 
 import numpy as np
 
 
-def _read_fits_bands(path: str) -> List[np.ndarray]:
+def _first_2d(path: str) -> np.ndarray:
     from astropy.io import fits
-
-    bands: List[np.ndarray] = []
     with fits.open(path) as hdul:
         for hdu in hdul:
-            data = getattr(hdu, "data", None)
-            if data is not None and np.ndim(data) == 2:
-                bands.append(np.asarray(data, dtype=float))
+            d = getattr(hdu, "data", None)
+            if d is not None and np.ndim(d) == 2:
+                return np.asarray(d, dtype=float)
+    raise ValueError(f"No 2-D image HDU in {path}")
+
+
+def _read_bands(src: Union[str, Sequence[str]]) -> List[np.ndarray]:
+    """Return a list of 2-D band arrays. `src` is one FITS (read all 2-D HDUs) or
+    a list of per-band FITS paths (read the first 2-D HDU of each)."""
+    if isinstance(src, (list, tuple)):
+        return [_first_2d(p) for p in src]
+    from astropy.io import fits
+    bands: List[np.ndarray] = []
+    with fits.open(src) as hdul:
+        for hdu in hdul:
+            d = getattr(hdu, "data", None)
+            if d is not None and np.ndim(d) == 2:
+                bands.append(np.asarray(d, dtype=float))
+    if not bands:
+        raise ValueError(f"No 2-D image HDU in {src}")
     return bands
 
 
@@ -44,11 +57,9 @@ def _stretch(x: np.ndarray, q=(1.0, 99.5), a: float = 10.0) -> np.ndarray:
     return np.arcsinh(a * x) / np.arcsinh(a)
 
 
-def fits_to_rgb(path: str, size: Optional[int] = None) -> np.ndarray:
-    """Convert a (possibly multi-band) FITS cutout to an (H, W, 3) uint8 image."""
-    bands = _read_fits_bands(path)
-    if not bands:
-        raise ValueError(f"No 2-D image HDU found in {path}")
+def fits_to_rgb(src: Union[str, Sequence[str]], size: Optional[int] = None) -> np.ndarray:
+    """Convert FITS (single multi-band file or per-band files) to (H, W, 3) uint8."""
+    bands = _read_bands(src)
     chans = bands[:3] if len(bands) >= 3 else [bands[0]] * 3
     rgb = np.stack([_stretch(c) for c in chans], axis=-1)
     img = (rgb * 255).astype(np.uint8)
@@ -60,27 +71,49 @@ def fits_to_rgb(path: str, size: Optional[int] = None) -> np.ndarray:
 
 def build_bologna_index(image_dir: str, catalog_csv: str, out_dir: str,
                         id_col: str = "ID", label_col: str = "is_lens",
-                        pattern: str = "*{id}*.fits", val_frac: float = 0.2,
-                        size: Optional[int] = None, seed: int = 42) -> str:
-    """Convert a local Bologna challenge copy into PNG + index.csv. Returns the
-    index path. Objects whose FITS cannot be found are skipped with a warning."""
+                        pattern: str = "*{id}*.fits",
+                        band_patterns: Optional[Sequence[str]] = None,
+                        label_threshold: Optional[float] = None,
+                        val_frac: float = 0.2, size: Optional[int] = None,
+                        seed: int = 42) -> str:
+    """Convert a local Bologna copy into PNG + index.csv; returns the index path.
+
+    band_patterns : per-band filename patterns (each containing '{id}') for the
+                    ground-based multi-file layout, composed into RGB. If None,
+                    the single `pattern` is used (space-based, or multi-HDU files).
+    label_threshold : if set, label = int(value > threshold); else int(value).
+    """
     from ..utils import write_png_dataset
 
     rng = np.random.default_rng(seed)
-    labels = {}
+    catalog = {}
     with open(catalog_csv) as f:
         for row in csv.DictReader(f):
-            labels[str(row[id_col])] = int(float(row[label_col]))
+            catalog[str(row[id_col])] = row[label_col]
+
+    def resolve(oid: str):
+        if band_patterns:
+            paths = []
+            for pat in band_patterns:
+                m = glob.glob(os.path.join(image_dir, pat.replace("{id}", oid)))
+                if not m:
+                    return None
+                paths.append(sorted(m)[0])
+            return paths
+        m = glob.glob(os.path.join(image_dir, pattern.replace("{id}", oid)))
+        return sorted(m)[0] if m else None
+
+    def to_label(raw: str) -> int:
+        return int(float(raw) > label_threshold) if label_threshold is not None else int(float(raw))
 
     items, missing = [], 0
-    for oid, label in labels.items():
-        matches = glob.glob(os.path.join(image_dir, pattern.replace("{id}", oid)))
-        if not matches:
+    for oid, raw in catalog.items():
+        src = resolve(oid)
+        if src is None:
             missing += 1
             continue
-        img = fits_to_rgb(matches[0], size=size)
-        split = "val" if rng.random() < val_frac else "train"
-        items.append((split, label, img, str(oid)))
+        items.append((("val" if rng.random() < val_frac else "train"),
+                      to_label(raw), fits_to_rgb(src, size=size), str(oid)))
 
     index, rows = write_png_dataset(out_dir, items)
     n_lens = sum(r["label"] for r in rows)
