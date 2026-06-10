@@ -49,6 +49,31 @@ LENS_CKPT=runs/exp1/best.pt python app/gradio_app.py
 ```
 No GPU yet? `pytest -q` runs a CPU end-to-end check with a tiny timm backbone.
 
+## How it works
+
+**One data contract.** Every data source — the physical `lenstronomy` simulator, the
+real `lenscat` + Legacy Survey cutouts, the dependency-free toy, or the Bologna
+challenge — emits the *same* artifact: a folder of PNG cutouts plus an `index.csv`
+with `path,label,split`. Training and evaluation only ever read that contract, so
+switching from simulation to a real benchmark is a one-line config change
+(`data.index`), not a code change.
+
+**The flow.** `index.csv` → `LensDataset` (resize to 224 px, lens-preserving flips/
+rotations, an imbalance-aware sampler) → a frozen **DINOv3 ViT-B** backbone adapted
+with **LoRA** (~3M trainable params out of 86M) → CLS token → a small MLP head → one
+lens/non-lens logit. Training uses **focal loss** (rare positives), **bf16** mixed
+precision and gradient accumulation to fit 8 GB. Evaluation reports **ranking**
+metrics — ROC-AUC, TPR at a fixed FPR, precision@N — because under extreme imbalance
+accuracy is meaningless; it also writes a ranked candidate list and the ROC/grid
+figures (`report.py`).
+
+**Layered architecture.** Each layer depends only on the ones below it:
+`config`/`utils` (base) → `simulation`/`data` (produce the `index.csv` contract) →
+`models` (backbone + head) → `training` (losses, metrics, trainer) →
+`evaluation`/`report`, with `cli.py` wiring everything into the `dino-lens` command.
+The trainer never knows whether the data came from a simulator or a survey — it only
+sees the contract. See [docs/architecture.md](docs/architecture.md).
+
 ## Results
 
 **DINOv3 ViT-B + LoRA**, fine-tuned on lenstronomy simulations and evaluated on a
