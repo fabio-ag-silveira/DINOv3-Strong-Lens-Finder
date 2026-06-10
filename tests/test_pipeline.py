@@ -30,7 +30,7 @@ def test_end_to_end_cpu(tmp_path):
     import torch
     from torch.utils.data import DataLoader
     from dino_lens_finder.config import Config
-    from dino_lens_finder.data import LensDataset, build_transforms, make_weighted_sampler
+    from dino_lens_finder.data.dataset import LensDataset, build_transforms, make_weighted_sampler
     from dino_lens_finder.models import build_model
     from dino_lens_finder.training.losses import BinaryFocalLoss
     from dino_lens_finder.simulation.toy import build_dataset
