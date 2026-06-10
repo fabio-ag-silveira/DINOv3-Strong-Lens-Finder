@@ -8,7 +8,7 @@ imagery by fine-tuning a **DINOv3** self-supervised vision backbone. Lenses are
 the Hubble constant — a textbook **needle-in-a-haystack ranking** problem and a
 clean showcase for modern transfer learning.
 
-The project's story: **train on physical simulations, then measure and analyse the
+The project's story: **train on physical simulations, then measure — and close — the
 sim→real gap on real lenses** (see Results).
 
 ![Simulated examples — green = lens, red = non-lens](assets/lens_examples.png)
@@ -62,28 +62,31 @@ held-out simulated set (single RTX 5060, ~3 min): **ROC-AUC 0.999**, **TPR@FPR=0
 > scientifically meaningful number is the **sim→real gap** below. Reproduce the
 > figures on CPU (no GPU/DINOv3) with [`notebooks/results.ipynb`](notebooks/results.ipynb).
 
-## Sim→real gap (lenscat)
+## Sim→real: measuring and closing the gap
 
-Evaluating the **same** simulation-trained model on **real** lenses (lenscat
-catalogue + Legacy Survey cutouts, [server-free](docs/lenscat.md)) drops it to
-near-random — the expected, well-known sim→real domain gap:
+The same DINOv3 + LoRA pipeline across three train→test regimes (single RTX 5060):
 
-| Test set | ROC-AUC | TPR@FPR=0.1 |
-|----------|:-------:|:-----------:|
-| Simulated (lenstronomy) | **0.999** | 1.00 |
-| Real (lenscat, ground-based) | **0.54** | 0.20 |
+| Train → Test | ROC-AUC | TPR@FPR=0.1 |
+|--------------|:-------:|:-----------:|
+| Sim → Sim (held-out lenstronomy) | **0.999** | 1.00 |
+| Sim → Real (lenscat + Legacy Survey) | **0.54** | 0.20 |
+| Real → Real (fine-tuned on lenscat) | **0.94** | 0.89 |
 
-![sim->real ROC](assets/sim2real_roc.png)
-
-The top-ranked real candidates reveal the cause: the model latched onto a
-*simulator-specific colour cue* (bluish arcs) and fires on blue stars/artifacts
-(red borders), while many spectroscopically-confirmed lenses show no visible arc at
-ground-based depth (a genuinely hard, noisy benchmark).
+Trained only on simulations, the model is **near-random on real lenses** — the
+classic sim→real domain gap. It had latched onto a simulator-specific colour cue
+(bluish arcs) and fired on blue stars/artifacts (red = false positive):
 
 ![sim->real top candidates](assets/sim2real_top16.png)
 
-Closing this gap — domain-matched simulation, fine-tuning on real labels, or the
-satellite-pretrained DINOv3 — is the natural next step.
+Fine-tuning on ~1.3k **real** cutouts **recovers AUC to 0.94** — the gap was domain
+shift, not capacity. The top-ranked real candidates are now all true lenses:
+
+![real->real top candidates](assets/realft_top16.png)
+
+> Caveat: the lenscat benchmark uses random-field negatives, so the real→real number
+> is optimistic (a model can partly exploit *“is there a central galaxy?”*). See
+> [docs/lenscat.md](docs/lenscat.md). The qualitative arc — large gap, then closed by
+> real data — is robust.
 
 ## Docs
 - [docs/usage.md](docs/usage.md) — full usage, config reference, DINOv3 access, 8 GB tips.
