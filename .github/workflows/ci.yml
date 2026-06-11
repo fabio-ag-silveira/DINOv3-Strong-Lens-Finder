@@ -24,12 +24,15 @@ jobs:
           cache: pip
           cache-dependency-path: pyproject.toml
 
-      - name: Install (CPU torch + package + dev tools)
+      - name: Install (CPU torch + package, version-locked)
         run: |
           python -m pip install --upgrade pip
           # CPU-only wheels keep the install small and fast
           pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
-          pip install -e ".[dev]"
+          # lock torch/torchvision to the matched CPU pair so the package install
+          # cannot pull a mismatched torchvision from PyPI (torchvision::nms error)
+          pip freeze | grep -iE "^(torch|torchvision)==" > /tmp/constraints.txt
+          pip install -e ".[dev]" -c /tmp/constraints.txt
 
       - name: Lint (pyflakes)
         run: find src tests app -name '*.py' -print0 | xargs -0 python -m pyflakes
