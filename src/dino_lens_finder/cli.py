@@ -79,6 +79,14 @@ def _build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--out", default="runs/exp1/ranked_candidates.csv")
     sp.add_argument("--index", default=None,
                     help="override data.index, e.g. data/lenscat/index.csv")
+
+    sp = sub.add_parser("analyze-color",
+                        help="diagnose a colour shortcut (score vs blueness + grayscale ablation)")
+    with_config(sp)
+    sp.add_argument("--ckpt", default="runs/exp1/best.pt")
+    sp.add_argument("--index", default="data/lenscat/index.csv")
+    sp.add_argument("--split", default="val")
+    sp.add_argument("--out", default="runs/analysis")
     return p
 
 
@@ -125,6 +133,11 @@ def main(argv: Optional[Sequence[str]] = None) -> None:
         from .evaluation import evaluate_checkpoint
         evaluate_checkpoint(Config.from_yaml(args.config), args.ckpt, args.split,
                             args.out, index=args.index)
+    elif args.cmd == "analyze-color":
+        from .config import Config
+        from .analysis import color_bias_report
+        color_bias_report(Config.from_yaml(args.config), args.ckpt, split=args.split,
+                          out_dir=args.out, index=args.index)
 
 
 if __name__ == "__main__":

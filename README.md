@@ -98,18 +98,26 @@ The same DINOv3 + LoRA pipeline across three train→test regimes (single RTX 50
 | Real → Real (fine-tuned on lenscat) | **0.94** | 0.89 |
 
 Trained only on simulations, the model is **near-random on real lenses** — the
-classic sim→real domain gap. It had latched onto a simulator-specific colour cue
-(bluish arcs) and fired on blue stars/artifacts (red = false positive):
+classic sim→real domain gap. Its most-confident false positives include blue stars and
+artifacts (red border):
 
 ![sim->real top candidates](assets/sim2real_top16.png)
+
+A colour-bias check (`dino-lens analyze-color`) keeps the claim honest: the
+score↔blueness correlation is weak (r = 0.15) and removing colour drops AUC only
+0.54 → 0.48. So colour is a **minor, measurable contributor** — not the main cause;
+the gap is dominated by broader domain shift (resolution, noise, real morphology).
+
+![colour-bias check](assets/color_bias.png)
 
 Fine-tuning on ~1.3k **real** cutouts **recovers AUC to 0.94** — the gap was domain
 shift, not capacity. The top-ranked real candidates are now all true lenses:
 
 ![real->real top candidates](assets/realft_top16.png)
 
-> Caveat: the lenscat benchmark uses random-field negatives, so the real→real number
-> is optimistic (a model can partly exploit *“is there a central galaxy?”*). See
+> Caveats: the lenscat benchmark is class-balanced and uses random-field negatives, so
+> precision@N and the real→real AUC are optimistic relative to real-world rarity (a
+> model can partly exploit *“is there a central galaxy?”*). See
 > [docs/lenscat.md](docs/lenscat.md). The qualitative arc — large gap, then closed by
 > real data — is robust.
 

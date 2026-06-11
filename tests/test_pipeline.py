@@ -80,3 +80,13 @@ def test_lenscat_build_offline(monkeypatch, tmp_path):
                                         size=32, sleep=0.0, seed=1)
     labels = [int(r["label"]) for r in csv.DictReader(open(idx))]
     assert labels.count(1) == 3 and labels.count(0) == 3
+
+
+def test_color_analysis_helpers():
+    import numpy as np
+    from dino_lens_finder.analysis import _blue_excess, _pearson
+    blue = np.zeros((4, 4, 3), np.uint8); blue[..., 2] = 255
+    red = np.zeros((4, 4, 3), np.uint8); red[..., 0] = 255
+    assert _blue_excess(blue) == 1.0
+    assert _blue_excess(red) == -1.0
+    assert abs(_pearson([1, 2, 3, 4], [1, 2, 3, 4]) - 1.0) < 1e-9
