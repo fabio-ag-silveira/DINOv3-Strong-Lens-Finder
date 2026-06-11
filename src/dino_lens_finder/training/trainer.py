@@ -76,7 +76,9 @@ class Trainer:
                                     enabled=use_amp):
                     loss = crit(self.model(x), y) / accum
                 scaler.scale(loss).backward() if scaler.is_enabled() else loss.backward()
-                if (i + 1) % accum == 0:
+                # step every `accum` micro-batches, and on the last batch so
+                # leftover gradients are never silently dropped
+                if (i + 1) % accum == 0 or (i + 1) == len(tr_loader):
                     if scaler.is_enabled():
                         scaler.step(opt); scaler.update()
                     else:
